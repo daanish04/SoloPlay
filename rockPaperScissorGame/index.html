@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissor</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://kit.fontawesome.com/c4ae16c801.js" crossorigin="anonymous"></script>
+    <link rel="icon" href="rock-paper-scissors.png">
+</head>
+<body>
+    <div class="wrapper">
+        <a class="home" href="../index.html"><i class="fa-solid fa-house"></i></a>
+        <div class="gameHeader">
+            <h1>ROCK<br>PAPER<br>SCISSORS<br>GAME</h1>
+            <div class="cards">
+                <div class="pcard card">
+                    <p>PLAYER</p>
+                    <p class="pscore">0</p>
+                </div>
+                <div class="ccard card">
+                    <p>COMPUTER</p>
+                    <p class="cscore">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="graphic">
+            <div class="player">
+                <span>PLAYER CHOSE</span>
+            </div>
+            <div class="hand">
+                <button onclick="play('rock')">ROCK</button>
+                <button onclick="play('paper')">PAPER</button>
+                <button onclick="play('scissors')">SCISSORS</button>
+            </div>
+            <div class="comp">
+                <span>COMPUTER CHOSE</span>
+            </div>
+        </div>
+
+        <div class="resultDisplay"></div>
+        <button class="reset" onclick="reset()">RESET</button>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
