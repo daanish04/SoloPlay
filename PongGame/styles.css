@@ -10,6 +10,20 @@ body {
   justify-content: flex-start;
 }
 
+.home {
+  font-size: 2rem;
+  width: 3.6rem;
+  height: 3.6rem;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: 3rem;
+  top: 3rem;
+  background-color: rgb(152, 152, 188);
+  border-radius: 50%;
+}
+
 h1 {
   letter-spacing: 3px;
   font-size: 3em;
