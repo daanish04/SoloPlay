@@ -66,6 +66,10 @@ h3{
     background-image: url(./maleGame.png);
 }
 
+.game4{
+    background-image: url(./PongGame/ping-pong.png);
+}
+
 .game:hover{
     transform: scale(1.01);
     opacity: 90%;
