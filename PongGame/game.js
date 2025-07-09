@@ -6,8 +6,52 @@ const paddleW = 12,
 const ballSize = 18;
 const minBallSpeed = 3.2,
   maxBallSpeed = 7.2;
-const aiMistakeChance = 0.18; // More chance for AI to blunder
-const winScore = 10;
+// Game settings (defaults)
+let gameSettings = {
+  difficulty: "medium",
+  pointsToWin: 10,
+  theme: "current",
+};
+
+// AI settings: only paddle speed changes with difficulty
+const aiSettings = {
+  easy: {
+    paddleSpeedFactor: 0.4,
+  },
+  medium: {
+    paddleSpeedFactor: 0.45,
+  },
+  hard: {
+    paddleSpeedFactor: 0.5,
+  },
+};
+
+function applyThemeFromSelect() {
+  const theme = document.getElementById("theme").value;
+  document.body.classList.remove("theme-neon", "theme-dark", "theme-classic");
+  canvas.classList.remove("theme-neon", "theme-dark", "theme-classic");
+  if (theme === "neon") {
+    document.body.classList.add("theme-neon");
+    canvas.classList.add("theme-neon");
+  } else if (theme === "dark") {
+    document.body.classList.add("theme-dark");
+    canvas.classList.add("theme-dark");
+  } else {
+    document.body.classList.add("theme-classic");
+    canvas.classList.add("theme-classic");
+  }
+}
+window.applyThemeFromSelect = applyThemeFromSelect;
+
+function applySettingsFromUI() {
+  const diff = document.getElementById("difficulty").value;
+  const pts = parseInt(document.getElementById("pointsToWin").value, 10);
+  const theme = document.getElementById("theme").value;
+  gameSettings.difficulty = diff;
+  gameSettings.pointsToWin = pts;
+  gameSettings.theme = theme;
+  applyThemeFromSelect();
+}
 
 // Game state
 let running = false,
@@ -15,6 +59,33 @@ let running = false,
   winner = "";
 let playerScore = 0,
   aiScore = 0;
+
+function setButtonStates() {
+  const startBtn = document.getElementById("startBtn");
+  const startBtnText = document.getElementById("startBtnText");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const pauseIcon = document.getElementById("pauseIcon");
+
+  if (!running) {
+    startBtnText.textContent = "Start";
+    startBtn.querySelector("i").className = "fa-solid fa-play";
+    pauseBtn.disabled = true;
+    pauseIcon.className = "fa-solid fa-pause";
+    document.getElementById("winner").textContent = "";
+  } else if (paused) {
+    startBtnText.textContent = "Resume";
+    startBtn.querySelector("i").className = "fa-solid fa-play";
+    pauseBtn.disabled = true;
+    pauseIcon.className = "fa-solid fa-pause";
+    document.getElementById("winner").textContent = "PAUSED";
+  } else {
+    startBtnText.textContent = "Start";
+    startBtn.querySelector("i").className = "fa-solid fa-play";
+    pauseBtn.disabled = false;
+    pauseIcon.className = "fa-solid fa-pause";
+    document.getElementById("winner").textContent = "";
+  }
+}
 
 // Paddles
 let playerY = (canvas.height - paddleH) / 2;
@@ -32,14 +103,15 @@ let upPressed = false,
 function resetBall(direction = 1) {
   ballX = canvas.width / 2 - ballSize / 2;
   ballY = canvas.height / 2 - ballSize / 2;
-  // Start ball at random angle toward the scoring player
-  let angle = (Math.random() * Math.PI) / 3 - Math.PI / 6; // [-30deg, 30deg]
+  let angle = (Math.random() * Math.PI) / 3 - Math.PI / 6;
   ballSpeed =
     minBallSpeed + Math.random() * (maxBallSpeed - minBallSpeed) * 0.7;
   ballVX = direction * ballSpeed * Math.cos(angle);
   ballVY = ballSpeed * Math.sin(angle);
-  // Update AI paddle speed to always be a tad slower than current ball speed
-  aiPaddleSpeed = Math.max(minBallSpeed * 0.9, ballSpeed * 0.86);
+  // AI paddle speed relative to average ball speed
+  const avgBallSpeed = (minBallSpeed + maxBallSpeed) / 2;
+  aiPaddleSpeed =
+    avgBallSpeed * aiSettings[gameSettings.difficulty].paddleSpeedFactor;
 }
 
 function resetGame() {
@@ -110,22 +182,12 @@ function update() {
   if (downPressed) playerY += playerPaddleSpeed;
   playerY = Math.max(0, Math.min(canvas.height - paddleH, playerY));
 
-  // AI paddle move with mistake chance
+  // AI paddle move: only paddle speed changes with difficulty
   let aiCenter = aiY + paddleH / 2;
   let targetY = ballY + ballSize / 2;
-  let mistake =
-    Math.random() < aiMistakeChance &&
-    ((ballVX > 0 && ballX > canvas.width / 2) || aiScore < playerScore);
-  // AI paddle is always slower than the ball
   let maxAIMove = aiPaddleSpeed;
-  if (!mistake) {
-    if (aiCenter < targetY - 10) aiY += maxAIMove;
-    else if (aiCenter > targetY + 10) aiY -= maxAIMove;
-  } else {
-    // AI purposely moves wrong direction
-    if (aiCenter < targetY) aiY -= maxAIMove * 0.6;
-    else aiY += maxAIMove * 0.6;
-  }
+  if (aiCenter < targetY - 10) aiY += maxAIMove;
+  else if (aiCenter > targetY + 10) aiY -= maxAIMove;
   aiY = Math.max(0, Math.min(canvas.height - paddleH, aiY));
 
   // Ball move
@@ -158,7 +220,6 @@ function update() {
     );
     ballVX = ballSpeed * Math.cos(angle);
     ballVY = ballSpeed * Math.sin(angle);
-    aiPaddleSpeed = Math.max(minBallSpeed * 0.9, ballSpeed * 0.86);
   }
 
   // AI paddle collision
@@ -176,14 +237,13 @@ function update() {
     );
     ballVX = -ballSpeed * Math.cos(angle);
     ballVY = ballSpeed * Math.sin(angle);
-    aiPaddleSpeed = Math.max(minBallSpeed * 0.9, ballSpeed * 0.86);
   }
 
   // Score check
   if (ballX < 0) {
     aiScore++;
     updateScore();
-    if (aiScore >= winScore) {
+    if (aiScore >= gameSettings.pointsToWin) {
       winner = "AI Wins!";
       running = false;
       document.getElementById("winner").textContent = winner;
@@ -194,7 +254,7 @@ function update() {
   if (ballX > canvas.width - ballSize) {
     playerScore++;
     updateScore();
-    if (playerScore >= winScore) {
+    if (playerScore >= gameSettings.pointsToWin) {
       winner = "Player Wins!";
       running = false;
       document.getElementById("winner").textContent = winner;
@@ -205,9 +265,8 @@ function update() {
 }
 
 function updateScore() {
-  document.getElementById(
-    "score"
-  ).textContent = `Player: ${playerScore}  |  AI: ${aiScore}`;
+  document.getElementById("score-player").textContent = playerScore;
+  document.getElementById("score-ai").textContent = aiScore;
   document.getElementById("winner").textContent = "";
 }
 
@@ -220,24 +279,47 @@ function gameLoop() {
 }
 
 // Controls
-document.getElementById("startBtn").onclick = function () {
-  if (!running) {
+function handleStart() {
+  if (!running || paused) {
+    applySettingsFromUI();
     running = true;
     paused = false;
-    if (winner) resetGame();
-  } else {
-    paused = false;
+    if (winner) {
+      resetGame();
+    } else if (ballVX === 0 && ballVY === 0) {
+      // Ball was reset to center, give it velocity
+      resetBall(Math.random() > 0.5 ? 1 : -1);
+    }
+    setButtonStates();
   }
+}
+function handlePause() {
+  if (running && !paused) {
+    paused = true;
+    setButtonStates();
+  }
+}
+function handleRestart() {
+  // Only reset the board, do not start the game
+  resetGame();
+  // Reset ball to center
+  ballX = canvas.width / 2 - ballSize / 2;
+  ballY = canvas.height / 2 - ballSize / 2;
+  ballVX = 0;
+  ballVY = 0;
+  running = false;
+  paused = false;
+  setButtonStates();
+  draw(); // Redraw immediately to show ball in center
+}
+document.getElementById("startBtn").onclick = function () {
+  handleStart();
 };
 document.getElementById("pauseBtn").onclick = function () {
-  paused = true;
+  handlePause();
 };
 document.getElementById("restartBtn").onclick = function () {
-  running = true;
-  paused = false;
-  winner = "";
-  resetGame();
-  draw();
+  handleRestart();
 };
 
 // Keyboard
@@ -251,6 +333,9 @@ window.addEventListener("keyup", function (e) {
 });
 
 // Init
+applySettingsFromUI();
+updateScore();
 resetGame();
+setButtonStates();
 draw();
 gameLoop();
